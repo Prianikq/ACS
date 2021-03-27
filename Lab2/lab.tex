@@ -1,0 +1,114 @@
+\section{Задание №3 -- Привидение уравнения поверхности второго рода к каноническому виду}
+
+\textbf{Описание:} Для заданной уравнением фигуры: упростить, привести к каноническому виду.
+
+\begin{sagesilent}
+var("x, y, z")
+u(x,y,z) = 7*x^2 - 14*x*y + 9*y^2 + 8*x*z - 11*z^2 + x + y + z - 10
+\end{sagesilent}
+
+\textbf{Уравнение фигуры (вариант №3)}: $u~\sage{u}$
+
+График функции:
+
+\begin{center}
+	\sageplot[trim=50 50 50 50, clip, width=10cm][png]{implicit_plot3d(u, (x, -10, 10), (y, -10, 10), (z, -10, 10))}
+\end{center}
+
+Фигура похожа на \textbf{однополостный гиперболоид}.
+
+\section{Решение}
+
+Сперва найдем решение системы $Ax+B=0$:
+
+\begin{sagesilent}
+A = matrix([[7, -7, 4], 
+                [-7, 9, 0],
+                [4, 0, -11] ])
+X = vector(var('x, y, z'))
+B = vector([0.5, 0.5, 0.5])
+a0 = -10
+solutions = [val.n(digits = 5) for val in A.solve_right(-B)]
+\end{sagesilent}
+
+$$ A = \sage{A} $$
+$$ B = \sage{B.n(digits = 2)} $$
+$$ x = \sage{X} $$
+$$ a_0 = \sage{a0} $$
+
+Решение системы $Ax+B=0$:
+$$ \sage{LatexExpr(r"x = " + str(solutions[0]) + r',~y = ' + str(solutions[1]) + r',~z = ' + str(solutions[2]) ) } $$
+
+Поскольку решение системы $Ax+B=0$ существует, следовательно она является совместной, что приводит к 1-му случаю решения.
+
+Далее находим значение свободного члена $a'_0 = x_0^T B + a_0$, где $x_0^T$ -- вектор-столбец с решениями предыдущей системы.
+
+\begin{sagesilent}
+X0 = vector(solutions)
+new_a0 = X0*B + a0
+\end{sagesilent}
+
+Свободный член нового уравнения $~a'_0 = \sage{new_a0}$
+
+Затем находим собственные значения матрицы $A$, которые являются коэффициентами в~«почти»~каноническом уравнении.
+
+\begin{sagesilent}
+C = A - x * identity_matrix(3)
+detC = det(C).simplify_full()
+my_eigenvals = solve(detC == 0, x)
+my_eigenvals = [value.rhs().n(digits = 6).real() for value in  my_eigenvals] # убрать мнимую часть-погрешность
+\end{sagesilent}
+
+Найдены следующие собственные значения:
+
+$$\sage{LatexExpr(r'\lambda{}_{1} = ' + str(my_eigenvals[0]) + r',~\lambda{}_{2} = ' + str(my_eigenvals[1]) + r',~\lambda{}_{3} = ' + str(my_eigenvals[2]) )}$$
+
+Далее необходимо найти собственные векторы матрицы $A$, которые будут являться направляющими векторами для осей в новой системе координат.
+
+\begin{sagesilent}
+#Нахождение собственных векторов
+my_eigenvecs = []
+for val in my_eigenvals:
+    workA = A - val * identity_matrix(3)
+    equations = []
+    for i in range(3):
+        equations.append(workA[i][0]*x + workA[i][1]*y + workA[i][2]*z == 0)
+    equations[1] = equations[1] - equations[0] * (workA[1][0] / workA[0][0])
+    equations[2] = equations[2] - equations[0] * (workA[2][0] / workA[0][0])
+    equations[2] = equations[2] - equations[1] * (equations[2].lhs() / equations[1].lhs())
+    if equations[2].lhs() == 0 and equations[2].rhs() == 0:
+        equations[2] = (z == 1)
+    eigenvec = vector([sol.rhs().n(digits = 5) for sol in solve(equations, x, y, z)[0]])
+    my_eigenvecs.append(eigenvec.n(digits = 5))
+\end{sagesilent}
+
+Полученные собственные векторы матрицы $A$:
+
+$$\sage{LatexExpr(r'\vec{a}_{1} = ' + str(my_eigenvecs[0]) +  r',~\vec{a}_{2} = ' + str(my_eigenvecs[1]) + r',~\vec{a}_{3} = ' + str(my_eigenvecs[2]))} $$
+
+Далее производим деление полученных ранее собственных значений матрицы $A$ на значение нового свободного члена для получения канонического уравнения в новой системе координат.
+
+\begin{sagesilent}
+var("x1, y1, z1")
+new_u = my_eigenvals[0]*x1^2 + my_eigenvals[1]*y1^2 + my_eigenvals[2]*z1^2 + new_a0
+new_u /= new_a0
+\end{sagesilent}
+
+$$u(x_1, y_1, z_1) = \sage{new_u}$$
+
+Для построения графика поверхности необходимо определить каноническое уравнение относительно старой системы координат. Для этого производится сдвиг по каждой координате на значения найденного решения системы $Ax + B = 0$, которое является координатами вектора $\vec{OO'}$ перехода из старой системы координат в новую.  
+
+Полученное каноническое уравнение в старой системе координат:
+
+\begin{sagesilent}
+new_u_in_old = my_eigenvals[0]*(x - solutions[0])^2 + my_eigenvals[1]*(y - solutions[1])^2 + my_eigenvals[2]*(z - solutions[2])^2 + new_a0
+new_u_in_old /= new_a0
+\end{sagesilent}
+
+$$u(x, y, z) = \sage{new_u_in_old} $$
+ 
+Полученный график поверхности:
+\begin{center}
+	\sageplot[trim=50 50 50 50, clip, width=10cm][png]{implicit_plot3d(new_u_in_old, (x, -10, 10), (y, -10, 10), (z, -10, 10))}
+\end{center}
+ 
